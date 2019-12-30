@@ -72,9 +72,14 @@ while True:
     # grab the current frame and initialize the occupied/unoccupied
     # text
     if nodename == "raspberrypi" and not pi_camera_gen == "end":
+        rawCapture.truncate(0)
         raw_image = camera.capture_continuous(rawCapture, format="bgr", use_video_port=True)
         pi_camera_gen = next(raw_image, "end")
-        frame = pi_camera_gen.array
+        if pi_camera_gen == "end":
+            pi_camera_gen = None
+            continue
+        else:
+            frame = pi_camera_gen.array
     else:
         (grabbed, frame) = camera.read()
         if not grabbed:
@@ -126,10 +131,7 @@ while True:
             print("Saving Photo")
             # thread.start_new_thread(savephoto, (frame,))
             savephoto(orig_frame)
-    if nodename == "raspberrypi":
-        rawCapture.truncate(0)
-    else:
-        pass
+
 
     #uncomment to show feed
     # cv2.putText(frame, "Room Status: {}".format(text), (10, 20),
