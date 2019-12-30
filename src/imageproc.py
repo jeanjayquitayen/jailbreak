@@ -36,6 +36,7 @@ if args.get("video", None) is None:
         camera.resolution = (640, 480)
         camera.framerate = 32
         rawCapture = PiRGBArray(camera, size=(640, 480))
+        pi_camera_gen = None
         time.sleep(0.1)
     else:
         camera = cv2.VideoCapture(0)
@@ -66,11 +67,13 @@ print("JailBreak Prototype Version\nFor education use only\nThe creators held no
     for any damages and problem due to miss use of these app.\nDevelopers: \ns")
 print("#" * 100)
 print("Minimum area: {}".format(args["min_area"]))
+
 while True:
     # grab the current frame and initialize the occupied/unoccupied
     # text
-    if nodename == "raspberrypi":
+    if nodename == "raspberrypi" and not pi_camera_gen == "end":
         raw_image = camera.capture_continuous(rawCapture, format="bgr", use_video_port=True)
+        pi_camera_gen = next(raw_image, "end")
         frame = raw_image.array
     else:
         (grabbed, frame) = camera.read()
