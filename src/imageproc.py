@@ -8,7 +8,9 @@ import signal
 import sys
 import time
 import imutils
-import cv2
+from cv2 import cvtColor, VideoCapture, THRESH_BINARY, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE
+from cv2 import GaussianBlur, absdiff, threshold, dilate, findContours
+from cv2 import contourArea, imwrite, COLOR_BGR2GRAY
 import sms
 # import _thread as thread
 
@@ -39,12 +41,12 @@ if args.get("video", None) is None:
         pi_camera_gen = None
         time.sleep(0.1)
     else:
-        camera = cv2.VideoCapture(0)
+        camera = VideoCapture(0)
         time.sleep(0.25)
 
 # otherwise, we are reading from a video file
 else:
-    camera = cv2.VideoCapture(args["video"])
+    camera = VideoCapture(args["video"])
 
 # initialize the first frame in the video stream
 firstFrame = None
@@ -56,7 +58,7 @@ CAPTURE_PATH = os.path.join(os.path.realpath(BASE_PATH), "captures")
 
 def savephoto(imgs):
     cap_time = datetime.datetime.now().strftime("%m-%d-%Y-%I-%M-%S")
-    cv2.imwrite(os.path.join(CAPTURE_PATH, cap_time) + '.jpg', imgs)
+    imwrite(os.path.join(CAPTURE_PATH, cap_time) + '.jpg', imgs)
 
 def sigHandler(sig, signal_frame):
     camera.release()
@@ -92,27 +94,27 @@ while True:
     orig_frame = frame
     # resize the frame, convert it to grayscale, and blur it
     frame = imutils.resize(frame, width=500)
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    gray = cv2.GaussianBlur(gray, (21, 21), 0) #noise filtering
+    gray = cvtColor(frame, COLOR_BGR2GRAY)
+    gray = GaussianBlur(gray, (21, 21), 0) #noise filtering
 
     # if the first frame is None, initialize it
     if firstFrame is None:
         firstFrame = gray #this is the reference frame , edit ang flowchart mali pala yon
         continue# compute the absolute difference between the current frame and
     # first frame
-    frameDelta = cv2.absdiff(firstFrame, gray) #get the difference between the two frames
-    thresh = cv2.threshold(frameDelta, 150, 255, cv2.THRESH_BINARY)[1]
+    frameDelta = absdiff(firstFrame, gray) #get the difference between the two frames
+    thresh = threshold(frameDelta, 150, 255, THRESH_BINARY)[1]
 
     # dilate the thresholded image to fill in holes, then find contours
     # on thresholded image
-    thresh = cv2.dilate(thresh, None, iterations=2)
-    (cnts,_) = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    thresh = dilate(thresh, None, iterations=2)
+    (cnts,_) = findContours(thresh.copy(), RETR_EXTERNAL, CHAIN_APPROX_SIMPLE)
 
     # loop over the contours
     
     for c in cnts:
         # if the contour is too small, ignore it
-        if cv2.contourArea(c) < args["min_area"]:
+        if contourArea(c) < args["min_area"]:
             continue #go back to capturing frame if the threshold was not met
 
         # compute the bounding box for the contour, draw it on the frame,
