@@ -12,6 +12,8 @@ import cv2
 import sms
 # import _thread as thread
 
+uname = os.uname()
+nodename = uname[1]
 
 
 
@@ -26,8 +28,18 @@ args = vars(ap.parse_args())
 
 # if the video argument is None, then we are reading from webcam
 if args.get("video", None) is None:
-    camera = cv2.VideoCapture(0)
-    time.sleep(0.25)
+    if nodename == "raspberrypi":
+        from picamera.array import PiRGBArray
+        from picamera import PiCamera
+        
+        camera = PiCamera()
+        camera.resolution = (640, 480)
+        camera.framerate = 32
+        rawCapture = PiRGBArray(camera, size=(640, 480))
+        time.sleep(0.1)
+    else:
+        camera = cv2.VideoCapture(0)
+        time.sleep(0.25)
 
 # otherwise, we are reading from a video file
 else:
@@ -57,13 +69,18 @@ print("Minimum area: {}".format(args["min_area"]))
 while True:
     # grab the current frame and initialize the occupied/unoccupied
     # text
-    (grabbed, frame) = camera.read()
+    if nodename == "raspberrypi":
+        raw_image = camera.capture_continuous(rawCapture, format="bgr", use_video_port=True)
+        frame = raw_image.array
+    else:
+        (grabbed, frame) = camera.read()
+        if not grabbed:
+            break
+        
     text = "Unoccupied"
 
-    # if the frame could not be grabbed, then we have reached the end
-    # of the video
-    if not grabbed:
-        break
+
+
     orig_frame = frame
     # resize the frame, convert it to grayscale, and blur it
     frame = imutils.resize(frame, width=500)
@@ -106,6 +123,10 @@ while True:
             print("Saving Photo")
             # thread.start_new_thread(savephoto, (frame,))
             savephoto(orig_frame)
+    if nodename == "raspberrypi":
+        rawCapture.truncate(0)
+    else:
+        pass
 
     #uncomment to show feed
     # cv2.putText(frame, "Room Status: {}".format(text), (10, 20),
@@ -117,12 +138,13 @@ while True:
     # cv2.imshow("Security Feed", frame)
     # cv2.imshow("Thresh", thresh)
     # cv2.imshow("Frame Delta", frameDelta)
-    key = cv2.waitKey(1) & 0xFF
+    # key = cv2.waitKey(1) & 0xFF
 
     # if the `q` key is pressed, break from the loop
-    if key == ord("q"):
-        break
+    # if key == ord("q"):
+    #     break
 
 # cleanup the camera and close any open windows
-camera.release()
-cv2.destroyAllWindows()
+if "raspberrypi" not in nodename:
+    camera.release()
+# cv2.destroyAllWindows()
