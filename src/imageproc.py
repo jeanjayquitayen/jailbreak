@@ -74,7 +74,7 @@ while True:
     if nodename == "raspberrypi" and not pi_camera_gen == "end":
         raw_image = camera.capture_continuous(rawCapture, format="bgr", use_video_port=True)
         pi_camera_gen = next(raw_image, "end")
-        frame = raw_image.array
+        frame = pi_camera_gen.array
     else:
         (grabbed, frame) = camera.read()
         if not grabbed:
