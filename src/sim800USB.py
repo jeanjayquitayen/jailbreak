@@ -1,26 +1,29 @@
 import serial
-
+import time
 
 class sim800USB(serial.Serial):
-    def __init__(self,port,baud,timeout):
-        super().__init__(port="/dev/ttyUSB0",baud=115200,timeout=None)
+    def __init__(self,port="/dev/ttyUSB0",baudrate=9600,tout=1):
+        super().__init__(port,baudrate,timeout=tout)
 
-    def sendAtCommand(self,at_command):
-        self.write((at_command + "\r").encode())
+    def sendAtCommand(self,at_command,endfeed="\r"):
+        self.write((at_command + endfeed).encode())
         self.flush()
         ret = self.process()
         return ret
 
     def handleResponse(self):
-        if self.in_waiting:
-            self.readline() #consume first line
-            yield  (self.read(self.in_waiting)).decode()
+        # print(self.read(self.in_waiting).decode())
+        _ = self.readline()
+        x = self.read(self.in_waiting) #consume first line
+        return x.decode()
+        
 
     def process(self):
         data = self.handleResponse()
-        d = [i for i in data]
-        if len(d) != 0:
-            return d
+        return data
+        # d = [i for i in data]
+        # if len(d) != 0:
+        #     return d
 
     def unpackData(self, generator):
         resp_list = list()
@@ -29,12 +32,14 @@ class sim800USB(serial.Serial):
         del generator
         return resp_list
 
-    #SMS Commands/functions/methods
-    def sendMessage(self,message,phonenumber):
-        self.sendAtCommand("AT+CMGF=1") #SMS system to textmode
-        self.sendAtCommand("AT+CSCS=GSM")
-        self.sendAtCommand("AT+CMGS={}".format(phonenumber))
-        ret = self.sendAtCommand("{}".format(message))
-        if not ret:
-            raise "Can't send SMS."
-    
+
+
+
+if __name__ == "__main__":
+    sms = sim800USB()
+    sms.sendMessage("testing","+639176356924")
+    # ret = sms.sendAtCommand("AT+CMGS=\"+639176356924\"")
+    print(sms.isOpen())
+    sms.close()
+    print(sms.isOpen())
+
