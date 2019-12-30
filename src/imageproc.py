@@ -4,20 +4,20 @@
 import argparse
 import datetime
 import os
+import signal
+import sys
 import time
 import imutils
 import cv2
-import _thread as thread
 import sms
+# import _thread as thread
+
 
 
 
 # gsm = sms.SMS("/dev/ttyUSB0",9600,None)
 
 #construct the argument parser and parse the arguments
-
-t_0 = 0
-t_1 = 0
 
 ap = argparse.ArgumentParser()
 ap.add_argument("-v", "--video", help="path to the video file")
@@ -45,7 +45,15 @@ def savephoto(imgs):
     cap_time = datetime.datetime.now().strftime("%m-%d-%Y-%I-%M-%S")
     cv2.imwrite(os.path.join(CAPTURE_PATH, cap_time) + '.jpg', imgs)
 
-
+def sigHandler(sig, signal_frame):
+    camera.release()
+    # cv2.destroyAllWindows()
+    sys.exit(0)
+signal.signal(signal.SIGINT, sigHandler)
+print("JailBreak Prototype Version\nFor education use only\nThe creators held no liabilities \
+    for any damages and problem due to miss use of these app.\nDevelopers: \ns")
+print("#" * 100)
+print("Minimum area: {}".format(args["min_area"]))
 while True:
     # grab the current frame and initialize the occupied/unoccupied
     # text
@@ -68,7 +76,7 @@ while True:
         continue# compute the absolute difference between the current frame and
     # first frame
     frameDelta = cv2.absdiff(firstFrame, gray) #get the difference between the two frames
-    thresh = cv2.threshold(frameDelta, 150, 255, cv2.THRESH_BINARY)[1] 
+    thresh = cv2.threshold(frameDelta, 150, 255, cv2.THRESH_BINARY)[1]
 
     # dilate the thresholded image to fill in holes, then find contours
     # on thresholded image
@@ -84,11 +92,13 @@ while True:
 
         # compute the bounding box for the contour, draw it on the frame,
         # and update the text
-        (x, y, w, h) = cv2.boundingRect(c)
-        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        # uncomment to show rectangle
+        # (x, y, w, h) = cv2.boundingRect(c)
+        # cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
         text = "Motion Detected!"
 
             # draw the text and timestamp on the frame
+    print("Room Status: {}".format(text), end="\r")
     if "Motion" in text:
         counter += 1
         if counter > 40:
@@ -96,15 +106,17 @@ while True:
             print("Saving Photo")
             # thread.start_new_thread(savephoto, (frame,))
             savephoto(orig_frame)
-    cv2.putText(frame, "Room Status: {}".format(text), (10, 20),
-        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
-    cv2.putText(frame, datetime.datetime.now().strftime("%A %d %B %Y %I:%M:%S%p"),
-        (10, frame.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 0, 255), 1)
+
+    #uncomment to show feed
+    # cv2.putText(frame, "Room Status: {}".format(text), (10, 20),
+    #     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+    # cv2.putText(frame, datetime.datetime.now().strftime("%A %d %B %Y %I:%M:%S%p"),
+    #     (10, frame.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 0, 255), 1)
 
     # show the frame and record if the user presses a key
-    cv2.imshow("Security Feed", frame)
-    #cv2.imshow("Thresh", thresh)
-    #cv2.imshow("Frame Delta", frameDelta)
+    # cv2.imshow("Security Feed", frame)
+    # cv2.imshow("Thresh", thresh)
+    # cv2.imshow("Frame Delta", frameDelta)
     key = cv2.waitKey(1) & 0xFF
 
     # if the `q` key is pressed, break from the loop
