@@ -86,18 +86,18 @@ while True:
         (grabbed, frame) = camera.read()
         if not grabbed:
             break
-        
-    text = "Unoccupied"
+    text = "Unoccupied      "
     orig_frame = frame
     # resize the frame, convert it to grayscale, and blur it
-    frame = imutils.resize(frame, width=500)
+    # frame = imutils.resize(frame, width=500)
     gray = cvtColor(frame, COLOR_BGR2GRAY)
     gray = GaussianBlur(gray, (21, 21), 0) #noise filtering
 
     # if the first frame is None, initialize it
     if firstFrame is None:
         firstFrame = gray #this is the reference frame , edit ang flowchart mali pala yon
-        continue# compute the absolute difference between the current frame and
+        continue
+    # compute the absolute difference between the current frame and
     # first frame
     frameDelta = absdiff(firstFrame, gray) #get the difference between the two frames
     thresh = threshold(frameDelta, 150, 255, THRESH_BINARY)[1]
