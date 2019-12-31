@@ -75,14 +75,13 @@ while True:
     # grab the current frame and initialize the occupied/unoccupied
     # text
     if nodename == "raspberrypi" and not pi_camera_gen == "end":
-        rawCapture.truncate(0)
         raw_image = camera.capture_continuous(rawCapture, format="bgr", use_video_port=True)
+        rawCapture.truncate(0)
         pi_camera_gen = next(raw_image, "end")
         if pi_camera_gen == "end":
             pi_camera_gen = None
             continue
-        else:
-            frame = pi_camera_gen.array
+        frame = pi_camera_gen.array
     else:
         (grabbed, frame) = camera.read()
         if not grabbed:
