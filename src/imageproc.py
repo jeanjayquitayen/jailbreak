@@ -61,7 +61,8 @@ def savephoto(imgs):
     imwrite(os.path.join(CAPTURE_PATH, cap_time) + '.jpg', imgs)
 
 def sigHandler(sig, signal_frame):
-    camera.release()
+    if "raspberrypi" not in nodename:
+        camera.release()
     # cv2.destroyAllWindows()
     sys.exit(0)
 signal.signal(signal.SIGINT, sigHandler)
@@ -88,9 +89,6 @@ while True:
             break
         
     text = "Unoccupied"
-
-
-
     orig_frame = frame
     # resize the frame, convert it to grayscale, and blur it
     frame = imutils.resize(frame, width=500)
@@ -110,8 +108,6 @@ while True:
     thresh = dilate(thresh, None, iterations=2)
     (cnts,_) = findContours(thresh.copy(), RETR_EXTERNAL, CHAIN_APPROX_SIMPLE)
 
-    # loop over the contours
-    
     for c in cnts:
         # if the contour is too small, ignore it
         if contourArea(c) < args["min_area"]:
