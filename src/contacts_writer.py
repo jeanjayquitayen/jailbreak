@@ -34,6 +34,7 @@ def csvWriter(name,phonenumber):
         csv_writer = csv.writer(csvfile)
         csv_writer.writerow([name, phonenumber])
 
+def readCSV():
 def showContacts():
     with open("contact.csv",'r') as csvfile:
         for line in csvfile:

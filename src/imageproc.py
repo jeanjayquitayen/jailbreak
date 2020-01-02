@@ -33,7 +33,7 @@ if args.get("video", None) is None:
     if nodename == "raspberrypi":
         from picamera.array import PiRGBArray
         from picamera import PiCamera
-        
+        gsm = sms.SMS("/dev/ttyUSB0",115200,1)
         camera = PiCamera()
         camera.resolution = (640, 480)
         camera.framerate = 32
@@ -41,6 +41,7 @@ if args.get("video", None) is None:
         pi_camera_gen = None
         time.sleep(0.1)
     else:
+        gsm = sms.SMS("/dev/ttyUSB0",115200,1)
         camera = VideoCapture(0)
         time.sleep(0.25)
 
