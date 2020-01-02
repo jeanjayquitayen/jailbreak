@@ -12,8 +12,11 @@ from cv2 import cvtColor, VideoCapture, THRESH_BINARY, RETR_EXTERNAL, CHAIN_APPR
 from cv2 import GaussianBlur, absdiff, threshold, dilate, findContours
 from cv2 import contourArea, imwrite, COLOR_BGR2GRAY
 import sms
-# import _thread as thread
+from contacts_writer import readCSV
+import _thread as thread
 
+contacts = readCSV()
+contacts = list(contacts)
 uname = os.uname()
 nodename = uname[1]
 
@@ -56,6 +59,10 @@ counter = 0
 SRC_PATH = os.getcwd()
 BASE_PATH = os.path.split(SRC_PATH)[0]
 CAPTURE_PATH = os.path.join(os.path.realpath(BASE_PATH), "captures")
+
+def multicastMessage(contact_arr):
+    for i in contact_arr:
+        gsm.sendMessage("PRISON BREAK ALERT! CONDUCT IMMEDIATE RESPONSE!",i)
 
 def savephoto(imgs):
     cap_time = datetime.datetime.now().strftime("%m-%d-%Y-%I-%M-%S")
@@ -127,7 +134,7 @@ while True:
         if counter > 40:
             counter = 0
             print("Saving Photo")
-            # thread.start_new_thread(savephoto, (frame,))
+            thread.start_new_thread(multicastMessage, (contacts,))
             savephoto(orig_frame)
 
 

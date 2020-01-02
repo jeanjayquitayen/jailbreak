@@ -35,22 +35,22 @@ def csvWriter(name,phonenumber):
         csv_writer.writerow([name, phonenumber])
 
 def readCSV():
-def showContacts():
     with open("contact.csv",'r') as csvfile:
         for line in csvfile:
             line = line.strip()
             line_split = line.split(',')
-            contacts[line_split[0]] = contacts.get(line_split[0],line_split[1])
-    if not contacts.keys():
-        return None
-    else:
-        contacts_list = [
-            inquirer.Checkbox('contact_name','Select contact(s) to delete.',contacts.keys())
-        ]
-        answer = inquirer.prompt(contacts_list,theme=GreenPassion())
-        return answer['contact_name']
+            contacts[line_split[0]] = contacts.get(line_split[0], line_split[1])
+    return contacts
 
-    
+def showContacts():
+    receivers = readCSV()
+    if not receivers.keys():
+        return None
+    contacts_list = [
+        inquirer.Checkbox('contact_name', 'Select contact(s) to delete.', receivers.keys())
+    ]
+    answer = inquirer.prompt(contacts_list, theme=GreenPassion())
+    return answer['contact_name']
 
 def delContacts():
     contact_key = showContacts()
@@ -72,8 +72,8 @@ if __name__ == "__main__":
     new_screen = consolemenu.screen.Screen()
     con_prompt = consolemenu.prompt_utils.PromptUtils(new_screen)
     menu = consolemenu.ConsoleMenu("Select an Option.")
-    add_contact = consolemenu.items.FunctionItem("Add contact",inq,None)
-    delete_contact = consolemenu.items.FunctionItem("Delete contact",delContacts,None)
+    add_contact = consolemenu.items.FunctionItem("Add contact", inq, None)
+    delete_contact = consolemenu.items.FunctionItem("Delete contact",delContacts, None)
 
 
     menu.append_item(add_contact)
