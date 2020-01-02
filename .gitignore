@@ -1,2 +1,4 @@
 #images
 *.jpg
+#python hidden
+*.pyc

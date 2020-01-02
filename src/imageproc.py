@@ -15,8 +15,7 @@ import sms
 from contacts_writer import readCSV
 import _thread as thread
 
-contacts = readCSV()
-contacts = list(contacts)
+contacts = list(readCSV().values())
 uname = os.uname()
 nodename = uname[1]
 
