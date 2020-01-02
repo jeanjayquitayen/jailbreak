@@ -2,7 +2,7 @@ import serial
 import time
 
 class sim800USB(serial.Serial):
-    def __init__(self,port="/dev/ttyUSB0",baudrate=9600,tout=1):
+    def __init__(self,port="/dev/ttyS0",baudrate=9600,tout=1):
         super().__init__(port,baudrate,timeout=tout)
 
     def sendAtCommand(self,at_command,endfeed="\r"):
