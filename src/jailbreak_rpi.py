@@ -36,7 +36,7 @@ def save_photo(imgs):
     imwrite(os.path.join(CAPTURE_PATH, cap_time) + '.jpg', imgs)
 
 def sig_handler(sig, signal_frame):
-    destroyAllWindows()
+    # destroyAllWindows()
     sys.exit(0)
 
 def show_feed(frame):
@@ -86,7 +86,7 @@ if __name__ == "__main__":
         Please create config.ini using create_config.py"       
     SERIAL_INI = CONF['pyserial']
     JAILBREAK_INI = CONF['jailbreak']
-    NODENAME = os.uname()[1]
+    # NODENAME = os.uname()[1]
     # if NODENAME == "raspberrypi":
     #     IS_PI = True
     # else:
@@ -100,16 +100,13 @@ if __name__ == "__main__":
     CAPTURE_PATH = os.path.join(os.path.realpath(BASE_PATH), "captures")
 
     signal.signal(signal.SIGINT, sig_handler)
-    try:
-        camera = PiCamera()
-        camera.resolution = (640, 480)
-        camera.framerate = 16
-        RAW_CAPTURE = PiRGBArray(camera, size=(640, 480))
-        time.sleep(0.1)
-    finally:
-        gsm = sms.SMS(SERIAL_INI['Port'], int(SERIAL_INI['Baudrate']), int(SERIAL_INI['Timeout']))
+    camera = PiCamera()
+    camera.resolution = (640, 480)
+    camera.framerate = 16
+    RAW_CAPTURE = PiRGBArray(camera, size=(640, 480))
+    time.sleep(0.1)
+    gsm = sms.SMS(SERIAL_INI['Port'], int(SERIAL_INI['Baudrate']), int(SERIAL_INI['Timeout']))
         
-
 
     print(JAILBREAK_INI['Console_txt'])
     print("#" * 100)
@@ -121,7 +118,7 @@ if __name__ == "__main__":
         frame = raw_image.array
         orig_frame = frame
         gray = prepare_image(frame)
-        text = JAILBREAK_INI['Unoccupied']
+        text = JAILBREAK_INI['Unoccupied'] + "      " #6 spaces
         # if the first frame is None, initialize it
         RAW_CAPTURE.truncate(0)
         if firstFrame is None:
@@ -130,8 +127,8 @@ if __name__ == "__main__":
         for c in background_subtraction(gray):
             # if the contour is too small, ignore it
             Area_contour = contourArea(c)
+            print("Threshold: {}\tContourArea: {}".format(CONF['cv']['Min-area'], Area_contour))
             if Area_contour < int(CONF['cv']['Min-area']):
-                print("Threshold: {}\tContourArea: {}".format(CONF['cv']['Min-area'],Area_contour))
                 continue #go back to capturing frame if the threshold was not met
             #put_rect_frame(frame, c)
             text = JAILBREAK_INI['Occupied']

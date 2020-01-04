@@ -20,7 +20,7 @@ config['jailbreak'] = {
 
     'Occupied':'Motion Detected!',
 
-    'Unoccupied':'Unoccupied      ', #observer the spaces
+    'Unoccupied':'Unoccupied', #observer the spaces
 }
 
 config['cv'] = {
