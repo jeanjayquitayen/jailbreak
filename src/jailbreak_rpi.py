@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 # import the necessary packages
-import argparse
 import datetime
 import os
 import signal
@@ -10,8 +9,7 @@ import time
 import configparser
 import threading
 from contextlib import contextmanager
-from picamera.array import PiRGBArray
-from picamera import PiCamera
+
 import imutils
 from cv2 import cvtColor, THRESH_BINARY, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE, destroyAllWindows
 from cv2 import GaussianBlur, absdiff, threshold, dilate, findContours, FONT_HERSHEY_SIMPLEX, waitKey
@@ -19,6 +17,8 @@ from cv2 import contourArea, imwrite, COLOR_BGR2GRAY, imshow, putText, rectangle
 from cv2 import error as cv2_error
 import sms
 from contacts_writer import readCSV
+from picamera.array import PiRGBArray
+from picamera import PiCamera
 
 try:
     contacts = list(readCSV().values())
@@ -36,9 +36,8 @@ def save_photo(imgs):
     imwrite(os.path.join(CAPTURE_PATH, cap_time) + '.jpg', imgs)
 
 def sig_handler(sig, signal_frame):
-    if IS_PI:
-        camera.release()
-    # cv2.destroyAllWindows()
+    camera.release()
+    destroyAllWindows()
     sys.exit(0)
 
 def show_feed(frame):
@@ -51,13 +50,8 @@ def show_feed(frame):
 
     #show the frame and record if the user presses a key
     imshow("Security Feed", frame)
-    imshow("Thresh", thresh)
-    imshow("Frame Delta", frameDelta)
-    key = waitKey(1) & 0xFF
-
-    #if the `q` key is pressed, break from the loop
-    if key == ord("q"):
-        break
+    # imshow("Thresh", thresh)
+    # imshow("Frame Delta", frameDelta)
 
 def put_rect_frame(frame,c):
     """Encluse Object with rectangle"""
@@ -99,12 +93,10 @@ if __name__ == "__main__":
     SERIAL_INI = CONF['pyserial']
     JAILBREAK_INI = CONF['jailbreak']
     NODENAME = os.uname()[1]
-    if NODENAME == "raspberrypi":
-        IS_PI = True
-    else:
-        IS_PI = False
-
-
+    # if NODENAME == "raspberrypi":
+    #     IS_PI = True
+    # else:
+    #     IS_PI = False
     # initialize the first frame in the video stream
     firstFrame = None
     counter = 0
@@ -113,50 +105,54 @@ if __name__ == "__main__":
     BASE_PATH = os.path.split(SRC_PATH)[0]
     CAPTURE_PATH = os.path.join(os.path.realpath(BASE_PATH), "captures")
 
-    signal.signal(signal.SIGINT, sigHandler)
+    signal.signal(signal.SIGINT, sig_handler)
     try:
-
         camera = PiCamera()
         camera.resolution = (640, 480)
         camera.framerate = 32
         rawCapture = PiRGBArray(camera, size=(640, 480))
     finally:
-        gsm = sms.SMS(var_serial['Port'], int(var_serial['Baudrate']), int(var_serial['Timeout']))
+        gsm = sms.SMS(SERIAL_INI['Port'], int(SERIAL_INI['Baudrate']), int(SERIAL_INI['Timeout']))
         time.sleep(0.1)
 
 
-    print(var_jailbreak['Console_txt'])
+    print(JAILBREAK_INI['Console_txt'])
     print("#" * 100)
     print("Minimum area: {}".format(int(CONF['cv']['Min-area'])))
-    text = var_jailbreak['Unoccupied']
-    while True: 
-        with capture_frame as cap:
-            while next(cap, None):
-                frame = cap.array
-                orig_frame = frame
-                gray = prepare_image(frame)
-                # if the first frame is None, initialize it
-                if firstFrame is None:
-                    firstFrame = gray #this is the reference frame , edit ang flowchart mali pala yon
-                    continue
-                for c in cnts:
-                    # if the contour is too small, ignore it
-                    if contourArea(c) < int(CONF['cv']['Min-area']):
-                        continue #go back to capturing frame if the threshold was not met
+    text = JAILBREAK_INI['Unoccupied']
+    for raw_image in  camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
+        frame = raw_image.array
+        orig_frame = frame
+        gray = prepare_image(frame)
+        # if the first frame is None, initialize it
+        if firstFrame is None:
+            firstFrame = gray #this is the reference frame , edit ang flowchart mali pala yon
+            continue
+        for c in background_subtraction(gray):
+            rawCapture.truncate(0)
+            # if the contour is too small, ignore it
+            if contourArea(c) < int(CONF['cv']['Min-area']):
+                continue #go back to capturing frame if the threshold was not met
+            put_rect_frame(frame, c)
 
+            text = JAILBREAK_INI['Occupied']
+            show_feed(frame)
 
-                    text = JAILBREAK_INI['Occupied']
-
-                        # draw the text and timestamp on the frame
-                print("Room Status: {}".format(text), end="\r")
-                if "Motion" in text:
-                    counter += 1
-                    if counter > 40:
-                        counter = 0
-                        print("Saving Photo")
-                        t = threading.Thread(group=None, target=multicast_message, args=(contacts,))
-                        t.start()
-                        save_photo(orig_frame)
+                # draw the text and timestamp on the frame
+        print("Room Status: {}".format(text), end="\r")
+        if "Motion" in text:
+            counter += 1
+            if counter > 40:
+                counter = 0
+                print("Saving Photo")
+                t = threading.Thread(group=None, target=multicast_message, args=(contacts,))
+                t.start()
+                save_photo(orig_frame)
+        key = waitKey(1) & 0xFF
+        #if the `q` key is pressed, break from the loop
+        if key == ord("q"):
+            break
+        
     # cleanup the camera and close any open windows
     # try:
     #     camera.release()
