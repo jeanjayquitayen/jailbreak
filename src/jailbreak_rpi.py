@@ -57,20 +57,12 @@ def put_rect_frame(frame,c):
     (x, y, w, h) = boundingRect(c)
     rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-@contextmanager
-def capture_frame():
-    # grab the current frame
-    raw_image = camera.capture_continuous(rawCapture, format="bgr", use_video_port=True)
-    yield raw_image
-    rawCapture.truncate(0)
-
-
 def prepare_image(frame):
     """resize the frame, convert it to grayscale, and blur it"""
     # frame = imutils.resize(frame, width=500)
-    gray = cvtColor(frame, COLOR_BGR2GRAY)
-    gray = GaussianBlur(gray, (21, 21), 0) #noise filtering
-    return gray
+    gray_img = cvtColor(frame, COLOR_BGR2GRAY)
+    gray_img = GaussianBlur(gray_img, (21, 21), 0) #noise filtering
+    return gray_img
 
 def background_subtraction(gray):
     """Perfroms background subrtraction, thresholding and finding contours"""
@@ -112,7 +104,7 @@ if __name__ == "__main__":
         camera = PiCamera()
         camera.resolution = (640, 480)
         camera.framerate = 16
-        rawCapture = PiRGBArray(camera, size=(640, 480))
+        RAW_CAPTURE = PiRGBArray(camera, size=(640, 480))
         time.sleep(0.1)
     finally:
         gsm = sms.SMS(SERIAL_INI['Port'], int(SERIAL_INI['Baudrate']), int(SERIAL_INI['Timeout']))
@@ -125,26 +117,26 @@ if __name__ == "__main__":
     SEND_THREAD = threading.Thread(group=None, target=multicast_message, args=(CONTACTS,))
     SAVE_THREAD = threading.Thread(group=None, target=queue_save_photos)
     SAVE_THREAD.start()
-    for raw_image in  camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
+    for raw_image in  camera.capture_continuous(RAW_CAPTURE, format="bgr", use_video_port=True):
         frame = raw_image.array
         orig_frame = frame
         gray = prepare_image(frame)
         text = JAILBREAK_INI['Unoccupied']
         # if the first frame is None, initialize it
-        rawCapture.truncate(0)
+        RAW_CAPTURE.truncate(0)
         if firstFrame is None:
             firstFrame = gray #this is the reference frame , edit ang flowchart mali pala yon
             continue
         for c in background_subtraction(gray):
             # if the contour is too small, ignore it
-            if contourArea(c) < int(CONF['cv']['Min-area']):
+            Area_contour = contourArea(c)
+            if Area_contour < int(CONF['cv']['Min-area']):
+                print("Threshold: {}\tContourArea: {}".format(CONF['cv']['Min-area'],Area_contour))
                 continue #go back to capturing frame if the threshold was not met
             #put_rect_frame(frame, c)
             text = JAILBREAK_INI['Occupied']
 
         #show_feed(frame)
-
-                # draw the text and timestamp on the frame
         print("Room Status: {}".format(text), end="\r")
         if "Motion" in text:
             q.put(orig_frame)
