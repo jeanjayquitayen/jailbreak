@@ -111,7 +111,7 @@ if __name__ == "__main__":
     try:
         camera = PiCamera()
         camera.resolution = (640, 480)
-        camera.framerate = 32
+        camera.framerate = 16
         rawCapture = PiRGBArray(camera, size=(640, 480))
         time.sleep(0.1)
     finally:
@@ -139,10 +139,10 @@ if __name__ == "__main__":
             # if the contour is too small, ignore it
             if contourArea(c) < int(CONF['cv']['Min-area']):
                 continue #go back to capturing frame if the threshold was not met
-            put_rect_frame(frame, c)
+            #put_rect_frame(frame, c)
             text = JAILBREAK_INI['Occupied']
 
-        show_feed(frame)
+        #show_feed(frame)
 
                 # draw the text and timestamp on the frame
         print("Room Status: {}".format(text), end="\r")
@@ -151,12 +151,14 @@ if __name__ == "__main__":
             counter += 1
             if counter > 32:
                 counter = 0
-                if not SEND_THREAD.is_alive:
-                    SEND_THREAD.start()
+                print("sending SMS")
+                #if not SEND_THREAD.is_alive:
+                    #SEND_THREAD.start()
+                    #pass
 
-        key = waitKey(1) & 0xFF
+        #key = waitKey(1) & 0xFF
         #if the `q` key is pressed, break from the loop
-        if key == ord("q"):
-            break
+        #if key == ord("q"):
+           # break
         
 
