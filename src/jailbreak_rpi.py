@@ -123,7 +123,7 @@ if __name__ == "__main__":
     print("#" * 100)
     print("Minimum area: {}".format(int(CONF['cv']['Min-area'])))
     SEND_THREAD = threading.Thread(group=None, target=multicast_message, args=(CONTACTS,))
-    SAVE_THREAD = threading.Thread(group=None, target=queue_save_photos, args=None)
+    SAVE_THREAD = threading.Thread(group=None, target=queue_save_photos)
     SAVE_THREAD.start()
     for raw_image in  camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
         frame = raw_image.array
