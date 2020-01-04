@@ -9,8 +9,6 @@ import time
 import configparser
 import threading
 from contextlib import contextmanager
-
-import imutils
 from cv2 import cvtColor, THRESH_BINARY, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE, destroyAllWindows
 from cv2 import GaussianBlur, absdiff, threshold, dilate, findContours, FONT_HERSHEY_SIMPLEX, waitKey
 from cv2 import contourArea, imwrite, COLOR_BGR2GRAY, imshow, putText, rectangle, boundingRect
@@ -19,9 +17,11 @@ import sms
 from contacts_writer import readCSV
 from picamera.array import PiRGBArray
 from picamera import PiCamera
+import queue
+q = queue.Queue()
 
 try:
-    contacts = list(readCSV().values())
+    CONTACTS = list(readCSV().values())
 
 except FileNotFoundError as err:
     sys.exit(err)
@@ -83,7 +83,10 @@ def background_subtraction(gray):
     thresh = dilate(thresh, None, iterations=2)
     (cnts, _) = findContours(thresh.copy(), RETR_EXTERNAL, CHAIN_APPROX_SIMPLE)
     return cnts
-
+def queue_save_photos():
+    while True:
+        if not q.empty():
+            save_photo(q.get())
 
 if __name__ == "__main__":
     CONF = configparser.ConfigParser()
@@ -119,11 +122,14 @@ if __name__ == "__main__":
     print(JAILBREAK_INI['Console_txt'])
     print("#" * 100)
     print("Minimum area: {}".format(int(CONF['cv']['Min-area'])))
-    text = JAILBREAK_INI['Unoccupied']
+    SEND_THREAD = threading.Thread(group=None, target=multicast_message, args=(CONTACTS,))
+    SAVE_THREAD = threading.Thread(group=None, target=queue_save_photos, args=None)
+    SAVE_THREAD.start()
     for raw_image in  camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
         frame = raw_image.array
         orig_frame = frame
         gray = prepare_image(frame)
+        text = JAILBREAK_INI['Unoccupied']
         # if the first frame is None, initialize it
         rawCapture.truncate(0)
         if firstFrame is None:
@@ -134,27 +140,23 @@ if __name__ == "__main__":
             if contourArea(c) < int(CONF['cv']['Min-area']):
                 continue #go back to capturing frame if the threshold was not met
             put_rect_frame(frame, c)
-
             text = JAILBREAK_INI['Occupied']
-            
+
         show_feed(frame)
 
                 # draw the text and timestamp on the frame
         print("Room Status: {}".format(text), end="\r")
         if "Motion" in text:
+            q.put(orig_frame)
             counter += 1
-            if counter > 40:
+            if counter > 32:
                 counter = 0
-                print("Saving Photo")
-                t = threading.Thread(group=None, target=multicast_message, args=(contacts,))
-                t.start()
-                save_photo(orig_frame)
+                if not SEND_THREAD.is_alive:
+                    SEND_THREAD.start()
+
         key = waitKey(1) & 0xFF
         #if the `q` key is pressed, break from the loop
         if key == ord("q"):
             break
         
-    # cleanup the camera and close any open windows
-    # try:
-    #     camera.release()
-    #     destroyAllWindows()
+
