@@ -35,12 +35,13 @@ def csvWriter(name,phonenumber):
         csv_writer.writerow([name, phonenumber])
 
 def readCSV():
-    with open("contact.csv",'r') as csvfile:
+    with open("contact.csv", 'r') as csvfile:
         for line in csvfile:
             line = line.strip()
             line_split = line.split(',')
             contacts[line_split[0]] = contacts.get(line_split[0], line_split[1])
     return contacts
+
 
 def showContacts():
     receivers = readCSV()

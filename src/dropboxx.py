@@ -30,7 +30,7 @@ TOKEN = 'oB9Mg8nWNSkAAAAAAAABtTaHhM17KxKCWloJbL6wa7R7MTBHlQ_g1Md8B40Uvt5C'
 parser = argparse.ArgumentParser(description='Sync ~/Secret to Dropbox')
 parser.add_argument('folder', nargs='?', default='Secret',
                     help='Folder name in your Dropbox')
-parser.add_argument('rootdir', nargs='?', default='/home/pi/Secret',
+parser.add_argument('rootdir', nargs='?', default='../captures',
                     help='Local directory to upload')
 parser.add_argument('--token', default=TOKEN,
                     help='Access token '
