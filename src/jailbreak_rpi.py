@@ -68,7 +68,7 @@ def capture_frame():
 
 def prepare_image(frame):
     """resize the frame, convert it to grayscale, and blur it"""
-    frame = imutils.resize(frame, width=500)
+    # frame = imutils.resize(frame, width=500)
     gray = cvtColor(frame, COLOR_BGR2GRAY)
     gray = GaussianBlur(gray, (21, 21), 0) #noise filtering
     return gray
