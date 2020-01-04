@@ -36,7 +36,6 @@ def save_photo(imgs):
     imwrite(os.path.join(CAPTURE_PATH, cap_time) + '.jpg', imgs)
 
 def sig_handler(sig, signal_frame):
-    camera.release()
     destroyAllWindows()
     sys.exit(0)
 
@@ -137,7 +136,8 @@ if __name__ == "__main__":
             put_rect_frame(frame, c)
 
             text = JAILBREAK_INI['Occupied']
-            show_feed(frame)
+            
+        show_feed(frame)
 
                 # draw the text and timestamp on the frame
         print("Room Status: {}".format(text), end="\r")
