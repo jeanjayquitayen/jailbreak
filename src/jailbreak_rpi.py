@@ -111,9 +111,10 @@ if __name__ == "__main__":
         camera.resolution = (640, 480)
         camera.framerate = 32
         rawCapture = PiRGBArray(camera, size=(640, 480))
+        time.sleep(0.1)
     finally:
         gsm = sms.SMS(SERIAL_INI['Port'], int(SERIAL_INI['Baudrate']), int(SERIAL_INI['Timeout']))
-        time.sleep(0.1)
+        
 
 
     print(JAILBREAK_INI['Console_txt'])
@@ -125,11 +126,11 @@ if __name__ == "__main__":
         orig_frame = frame
         gray = prepare_image(frame)
         # if the first frame is None, initialize it
+        rawCapture.truncate(0)
         if firstFrame is None:
             firstFrame = gray #this is the reference frame , edit ang flowchart mali pala yon
             continue
         for c in background_subtraction(gray):
-            rawCapture.truncate(0)
             # if the contour is too small, ignore it
             if contourArea(c) < int(CONF['cv']['Min-area']):
                 continue #go back to capturing frame if the threshold was not met
