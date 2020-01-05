@@ -22,10 +22,8 @@ class SMS(sim800USB.sim800USB):
         time.sleep(0.05)
         ret = self.sendAtCommand("AT+CMGS=\"{}\"".format(phonenumber))
         # time.sleep(0.1)
-        ret = self.sendAtCommand(message,endfeed="\u001A")
-        if not ret:
-            print("cant send")
-        print(ret)
+        self.sendAtCommand(message,endfeed="\u001A")
+
         
 
 if __name__ == "__main__":

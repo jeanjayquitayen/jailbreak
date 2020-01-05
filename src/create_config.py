@@ -26,5 +26,9 @@ config['jailbreak'] = {
 config['cv'] = {
     'Min-area':'50'
 }
+
+config['sendSMS'] = {
+    'delay':'5'
+}
 with open('config.ini', 'w+') as configfile:
     config.write(configfile)

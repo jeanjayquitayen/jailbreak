@@ -8,7 +8,9 @@ import sys
 import time
 import configparser
 import threading
+import queue
 from contextlib import contextmanager
+import logging
 from cv2 import cvtColor, THRESH_BINARY, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE, destroyAllWindows
 from cv2 import GaussianBlur, absdiff, threshold, dilate, findContours, FONT_HERSHEY_SIMPLEX, waitKey
 from cv2 import contourArea, imwrite, COLOR_BGR2GRAY, imshow, putText, rectangle, boundingRect
@@ -17,19 +19,18 @@ import sms
 from contacts_writer import readCSV
 from picamera.array import PiRGBArray
 from picamera import PiCamera
-import queue
+from dropboxx import main
+
 q = queue.Queue()
-
-try:
-    CONTACTS = list(readCSV().values())
-
-except FileNotFoundError as err:
-    sys.exit(err)
-
+qsms = queue.Queue()
 
 def multicast_message(contact_arr):
     for i in contact_arr:
-        gsm.sendMessage(JAILBREAK_INI['Message'], i)
+        try:
+            gsm.sendMessage(JAILBREAK_INI['Message'], i)
+            logger.info("SMS SENT")
+        except:
+            logger.warning("SMS FAILED")
 
 def save_photo(imgs):
     cap_time = datetime.datetime.now().strftime("%m-%d-%Y-%I-%M-%S")
@@ -37,6 +38,10 @@ def save_photo(imgs):
 
 def sig_handler(sig, signal_frame):
     # destroyAllWindows()
+    q.put(40)
+    if SEND_THREAD.is_alive():
+        SEND_THREAD.join()
+    logger.info("APP EXIT")
     sys.exit(0)
 
 def show_feed(frame):
@@ -78,14 +83,59 @@ def background_subtraction(gray):
 def queue_save_photos():
     while True:
         if not q.empty():
-            save_photo(q.get())
+            data = q.get()
+            try:
+                if data == 40:
+                    break
+            except ValueError as err:
+                # app_logger.warning(err)
+                pass    
+            finally:
+                save_photo(q.get())
+
+def queue_sms(contacts):
+    while True:
+        if not qsms.empty():
+            if qsms.get():
+                multicast_message(contacts)
+
+def uploadImages():
+    while True:
+        main()
 
 if __name__ == "__main__":
+
+    try:
+        CONTACTS = list(readCSV().values())
+    except FileNotFoundError as err:
+        logger.error(err)
+        sys.exit(err)
+
+        # create logger
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+
+    # create file handler and set level to debug
+    ch = logging.FileHandler("../captures/" + datetime.datetime.now().strftime("%m-%d-%Y-%I-%M-%S") + ".log")
+    ch.setLevel(logging.DEBUG)
+
+    # create formatter
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    # add formatter to ch
+    ch.setFormatter(formatter)
+
+    # add ch to loggerDEBUG
+    logger.addHandler(ch)
     CONF = configparser.ConfigParser()
-    assert CONF.read('config.ini'), "No config.ini file found. \
-        Please create config.ini using create_config.py"       
+    try:
+        assert CONF.read('config.ini'), "No config.ini file found. \
+            Please create config.ini using create_config.py"
+    except AssertionError as err:
+        logger.error(err)       
     SERIAL_INI = CONF['pyserial']
     JAILBREAK_INI = CONF['jailbreak']
+
     # NODENAME = os.uname()[1]
     # if NODENAME == "raspberrypi":
     #     IS_PI = True
@@ -93,32 +143,45 @@ if __name__ == "__main__":
     #     IS_PI = False
     # initialize the first frame in the video stream
     firstFrame = None
-    counter = 0
+    
     # loop over the frames of the video
     SRC_PATH = os.getcwd()
     BASE_PATH = os.path.split(SRC_PATH)[0]
     CAPTURE_PATH = os.path.join(os.path.realpath(BASE_PATH), "captures")
 
     signal.signal(signal.SIGINT, sig_handler)
-    camera = PiCamera()
-    camera.resolution = (640, 480)
-    camera.framerate = 16
-    RAW_CAPTURE = PiRGBArray(camera, size=(640, 480))
-    time.sleep(0.1)
-    gsm = sms.SMS(SERIAL_INI['Port'], int(SERIAL_INI['Baudrate']), int(SERIAL_INI['Timeout']))
+    try:
+        camera = PiCamera()
+        camera.resolution = (640, 480)
+        camera.framerate = 16
+        RAW_CAPTURE = PiRGBArray(camera, size=(640, 480))
+        time.sleep(0.1)
+    except:
+        logger.error("Picamera Init Error")
+    try:
+        gsm = sms.SMS(SERIAL_INI['Port'], int(SERIAL_INI['Baudrate']), int(SERIAL_INI['Timeout']))
+    except:
+        logger.error("GSMS Serial Init Error")
         
 
     print(JAILBREAK_INI['Console_txt'])
     print("#" * 100)
     print("Minimum area: {}".format(int(CONF['cv']['Min-area'])))
-    SEND_THREAD = threading.Thread(group=None, target=multicast_message, args=(CONTACTS,))
+    DROPBOX_THREAD = threading.Thread(group=None, target=uploadImages)
+    DROPBOX_THREAD.start()
+    SEND_THREAD = threading.Thread(group=None, target=queue_sms, args=(CONTACTS,))
     SAVE_THREAD = threading.Thread(group=None, target=queue_save_photos)
+    SAVE_THREAD.daemon = True
     SAVE_THREAD.start()
+    time_last_sent = 0
+    time_now = 0
+    send_SMS = False
     for raw_image in  camera.capture_continuous(RAW_CAPTURE, format="bgr", use_video_port=True):
         frame = raw_image.array
         orig_frame = frame
         gray = prepare_image(frame)
         text = JAILBREAK_INI['Unoccupied'] + "      " #6 spaces
+        Area_contour = 0
         # if the first frame is None, initialize it
         RAW_CAPTURE.truncate(0)
         if firstFrame is None:
@@ -127,23 +190,27 @@ if __name__ == "__main__":
         for c in background_subtraction(gray):
             # if the contour is too small, ignore it
             Area_contour = contourArea(c)
-            print("Threshold: {}\tContourArea: {}".format(CONF['cv']['Min-area'], Area_contour))
             if Area_contour < int(CONF['cv']['Min-area']):
                 continue #go back to capturing frame if the threshold was not met
             #put_rect_frame(frame, c)
             text = JAILBREAK_INI['Occupied']
-
+            
         #show_feed(frame)
-        print("Room Status: {}".format(text), end="\r")
+        print("Room Status: {}".format(text))
+        print("Threshold: {}\tContourArea: {}".format(CONF['cv']['Min-area'], Area_contour))
         if "Motion" in text:
             q.put(orig_frame)
-            counter += 1
-            if counter > 32:
-                counter = 0
-                print("sending SMS")
-                #if not SEND_THREAD.is_alive:
-                    #SEND_THREAD.start()
-                    #pass
+            time_now = time.time()
+            if (time_now - time_last_sent) >= int(CONF['sendSMS']['delay']):
+                send_SMS = True
+                print("SENDING SMS")
+                if send_SMS:
+                    print("SENDING SMS NOW")
+                    logger.info("SENDING SMS")
+                    qsms.put(True)
+                    time.sleep(0.1)
+                    time_last_sent = time.time()
+                    send_SMS = False
 
         #key = waitKey(1) & 0xFF
         #if the `q` key is pressed, break from the loop

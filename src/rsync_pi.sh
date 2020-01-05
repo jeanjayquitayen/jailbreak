@@ -1,0 +1,1 @@
+rsync -zarvh jailbreak_rpi.py pi@192.168.1.100:/home/pi/jailbreak/src
