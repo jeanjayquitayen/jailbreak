@@ -16,20 +16,18 @@ import os
 import six
 import sys
 import time
-import logging
 import unicodedata
-import dropbox
-from dropbox.files import FileMetadata, FolderMetadata
-
 
 if sys.version.startswith('2'):
     input = raw_input
 
-# logging = logging.getlogging("Dropboxx")
-# OAuth2 access token.  TODO: login etc.
-TOKEN = 'QabTaMfxYJAAAAAAAAAAMMoDOyhttLbB7GhWAD1m5i79rbk4GclQijRAFGUwcaVx'
+import dropbox
+from dropbox.files import FileMetadata, FolderMetadata
 
-parser = argparse.ArgumentParser(description='Sync Captures to Dropbox')
+# OAuth2 access token.  TODO: login etc.
+TOKEN = 'QabTaMfxYJAAAAAAAAAAMS8mSZrVxsE3qXWeZDL-dVBxiVeHBBT4WdFyC-WE6B1A'
+
+parser = argparse.ArgumentParser(description='Sync ~/Secret to Dropbox')
 parser.add_argument('folder', nargs='?', default='captures',
                     help='Folder name in your Dropbox')
 parser.add_argument('rootdir', nargs='?', default='../captures',
@@ -43,7 +41,6 @@ parser.add_argument('--no', '-n', action='store_true',
                     help='Answer no to all questions')
 parser.add_argument('--default', '-d', action='store_true',
                     help='Take default answer on all questions')
-
 
 def main():
     """Main program.
@@ -63,13 +60,13 @@ def main():
 
     folder = args.folder
     rootdir = os.path.expanduser(args.rootdir)
-    # print('Dropbox folder name:', folder)
-    # print('Local directory:', rootdir)
+    print('Dropbox folder name:', folder)
+    print('Local directory:', rootdir)
     if not os.path.exists(rootdir):
-        logging.error('{} does not exist on your filesystem'.format(rootdir))
+        print(rootdir, 'does not exist on your filesystem')
         sys.exit(1)
     elif not os.path.isdir(rootdir):
-        logging.error('{} is not a foldder on your filesystem'.format(rootdir))
+        print(rootdir, 'is not a foldder on your filesystem')
         sys.exit(1)
 
     dbx = dropbox.Dropbox(args.token)
@@ -77,7 +74,7 @@ def main():
     for dn, dirs, files in os.walk(rootdir):
         subfolder = dn[len(rootdir):].strip(os.path.sep)
         listing = list_folder(dbx, folder, subfolder)
-        logging.info('Descending into {}'.format(subfolder))
+        print('Descending into', subfolder, '...')
 
         # First do all the files.
         for name in files:
@@ -86,13 +83,11 @@ def main():
                 name = name.decode('utf-8')
             nname = unicodedata.normalize('NFC', name)
             if name.startswith('.'):
-                logging.info('Skipping dot file: {}'.format(name))
+                print('Skipping dot file:', name)
             elif name.startswith('@') or name.endswith('~'):
-                logging.info('Skipping temporary file: {}'.fromat(name))
+                print('Skipping temporary file:', name)
             elif name.endswith('.pyc') or name.endswith('.pyo'):
-                logging.info('Skipping generated file: {}'.format(name))
-            elif name.endswith('.txt') or name.endswith('.pyo'):
-                logging.info('Skipping txt file: {}'.format(name))
+                print('Skipping generated file:', name)
             elif nname in listing:
                 md = listing[nname]
                 mtime = os.path.getmtime(fullname)
@@ -100,44 +95,40 @@ def main():
                 size = os.path.getsize(fullname)
                 if (isinstance(md, dropbox.files.FileMetadata) and
                     mtime_dt == md.client_modified and size == md.size):
-                    logging.info('{} is already synced [stats match]'.format(name))
-                    os.remove("../captures/" + name)
+                    print(name, 'is already synced [stats match]')
                 else:
-                    logging.info('exists with different stats, downloading'.format(name))
+                    print(name, 'exists with different stats, downloading')
                     res = download(dbx, folder, subfolder, name)
                     with open(fullname) as f:
                         data = f.read()
                     if res == data:
-                        print(name + 'is already synced [content match]')
-                        os.remove("../captures/" + name)
+                        print(name, 'is already synced [content match]')
                     else:
-                        print(name + 'has changed since last sync')
+                        print(name, 'has changed since last sync')
                         if yesno('Refresh %s' % name, False, args):
                             upload(dbx, fullname, folder, subfolder, name,
                                    overwrite=True)
-                            os.remove("../captures/" + name)
             else:#elif yesno('Upload %s' % name, True, args):
-                logging.info('uploading {}'.format(name))
+                print('uploading %s' % name)
                 try:
                     upload(dbx, fullname, folder, subfolder, name)
-                    os.remove("../captures/" + name)
                 except:
-                    logging.error('no connection')
+                    print('no connection')
 
         # Then choose which subdirectories to traverse.
         keep = []
         for name in dirs:
             if name.startswith('.'):
-                logging.info('Skipping dot directory: {}'.format(name))
+                print('Skipping dot directory:', name)
             elif name.startswith('@') or name.endswith('~'):
-                logging.info('Skipping temporary directory: {}'.format(name))
+                print('Skipping temporary directory:', name)
             elif name == '__pycache__':
-                logging.info('Skipping generated directory: {}'.format(name))
+                print('Skipping generated directory:', name)
             elif yesno('Descend into %s' % name, True, args):
-                logging.info('Keeping directory: {}'.format(name))
+                print('Keeping directory:', name)
                 keep.append(name)
             else:
-                logging.info('OK, skipping directory: {}'.format(name))
+                print('OK, skipping directory:', name)
         dirs[:] = keep
         
 
@@ -264,5 +255,5 @@ def stopwatch(message):
 if __name__ == '__main__':
     while(1):
         main()
-        time.sleep(5)
+        time.sleep(60)
 
