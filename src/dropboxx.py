@@ -88,6 +88,8 @@ def main():
                 print('Skipping temporary file:', name)
             elif name.endswith('.pyc') or name.endswith('.pyo'):
                 print('Skipping generated file:', name)
+            elif name.endswith('.txt'):
+                print('Skipping text file:', name)
             elif nname in listing:
                 md = listing[nname]
                 mtime = os.path.getmtime(fullname)
