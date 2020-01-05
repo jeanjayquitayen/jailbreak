@@ -27,7 +27,7 @@ if sys.version.startswith('2'):
 
 # logging = logging.getlogging("Dropboxx")
 # OAuth2 access token.  TODO: login etc.
-TOKEN = 'QabTaMfxYJAAAAAAAAAAEqL5zApWw_Jr2L3mhu0i8GZDxH8BSsi8tq1XShxM47pv'
+TOKEN = 'QabTaMfxYJAAAAAAAAAAMMoDOyhttLbB7GhWAD1m5i79rbk4GclQijRAFGUwcaVx'
 
 parser = argparse.ArgumentParser(description='Sync Captures to Dropbox')
 parser.add_argument('folder', nargs='?', default='captures',
