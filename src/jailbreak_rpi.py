@@ -101,7 +101,10 @@ def queue_sms(contacts):
 
 def uploadImages():
     while True:
-        main()
+        try:
+            main()
+        except:
+            print("Can't Upload")
 
 if __name__ == "__main__":
 

@@ -25,7 +25,7 @@ import dropbox
 from dropbox.files import FileMetadata, FolderMetadata
 
 # OAuth2 access token.  TODO: login etc.
-TOKEN = 'QabTaMfxYJAAAAAAAAAAMS8mSZrVxsE3qXWeZDL-dVBxiVeHBBT4WdFyC-WE6B1A'
+TOKEN = 'QabTaMfxYJAAAAAAAAAAM8lrtVtC_DtSfm6kvnc4oAIGYGg1DLzhaU143HhZgifv'
 
 parser = argparse.ArgumentParser(description='Sync ~/Secret to Dropbox')
 parser.add_argument('folder', nargs='?', default='captures',
@@ -255,5 +255,5 @@ def stopwatch(message):
 if __name__ == '__main__':
     while(1):
         main()
-        time.sleep(60)
+        time.sleep(5)
 
