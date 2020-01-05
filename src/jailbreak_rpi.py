@@ -20,10 +20,12 @@ from contacts_writer import readCSV
 from picamera.array import PiRGBArray
 from picamera import PiCamera
 from dropboxx import main
+from gpiozero import LED
 
 q = queue.Queue()
 qsms = queue.Queue()
-
+led = LED(17) # Choose the correct pin number
+led.off()
 def multicast_message(contact_arr):
     for i in contact_arr:
         try:
@@ -205,6 +207,9 @@ if __name__ == "__main__":
             q.put(orig_frame)
             time_now = time.time()
             if (time_now - time_last_sent) >= int(CONF['sendSMS']['delay']):
+                if time_last_sent == 0:
+                    time_last_sent = time_now
+                    continue
                 send_SMS = True
                 print("SENDING SMS")
                 if send_SMS:
@@ -212,6 +217,7 @@ if __name__ == "__main__":
                     logger.info("SENDING SMS")
                     qsms.put(True)
                     time.sleep(0.1)
+                    led.on()
                     time_last_sent = time.time()
                     send_SMS = False
 
