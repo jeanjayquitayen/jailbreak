@@ -26,6 +26,7 @@ q = queue.Queue()
 qsms = queue.Queue()
 led = LED(17) # Choose the correct pin number
 led.off()
+alarm = False
 def multicast_message(contact_arr):
     #gsm.sendMessageAndSave(JAILBREAK_INI['Message'],contact_arr.pop())
     for i in contact_arr:
@@ -108,6 +109,7 @@ def uploadImages():
         try:
             main()
         except:
+            print("Can't Upload")
             print("Can't Upload")
 
 if __name__ == "__main__":
@@ -223,7 +225,9 @@ if __name__ == "__main__":
                 if send_SMS:
                     print("SENDING SMS NOW")
                     logger.info("SENDING SMS")
-                    led.on()
+                    if(!alarm):
+                        alarm = True
+                        led.on()
                     qsms.put(True)
                     time_last_sent = time.time()
                     send_SMS = False
