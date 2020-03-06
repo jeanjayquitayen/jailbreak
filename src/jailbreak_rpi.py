@@ -27,12 +27,15 @@ qsms = queue.Queue()
 led = LED(17) # Choose the correct pin number
 led.off()
 def multicast_message(contact_arr):
+    #gsm.sendMessageAndSave(JAILBREAK_INI['Message'],contact_arr.pop())
     for i in contact_arr:
         try:
             gsm.sendMessage(JAILBREAK_INI['Message'], i)
+            time.sleep(3)
             logger.info("SMS SENT")
         except:
             logger.warning("SMS FAILED")
+    gsm.setToGsm()
 
 def save_photo(imgs):
     cap_time = datetime.datetime.now().strftime("%m-%d-%Y-%I-%M-%S")
@@ -41,8 +44,6 @@ def save_photo(imgs):
 def sig_handler(sig, signal_frame):
     # destroyAllWindows()
     q.put(40)
-    if SEND_THREAD.is_alive():
-        SEND_THREAD.join()
     logger.info("APP EXIT")
     sys.exit(0)
 
@@ -100,6 +101,7 @@ def queue_sms(contacts):
         if not qsms.empty():
             if qsms.get():
                 multicast_message(contacts)
+                time.sleep(5)
 
 def uploadImages():
     while True:
@@ -112,6 +114,7 @@ if __name__ == "__main__":
 
     try:
         CONTACTS = list(readCSV().values())
+        print(CONTACTS)
     except FileNotFoundError as err:
         logger.error(err)
         sys.exit(err)
@@ -160,24 +163,29 @@ if __name__ == "__main__":
         camera.resolution = (640, 480)
         camera.framerate = 16
         RAW_CAPTURE = PiRGBArray(camera, size=(640, 480))
-        time.sleep(0.1)
+        time.sleep(10) # Delay on start
     except:
+        sys.exit(0)
         logger.error("Picamera Init Error")
     try:
         gsm = sms.SMS(SERIAL_INI['Port'], int(SERIAL_INI['Baudrate']), int(SERIAL_INI['Timeout']))
     except:
         logger.error("GSMS Serial Init Error")
         
+    gsm.setToGsm()
 
     print(JAILBREAK_INI['Console_txt'])
     print("#" * 100)
     print("Minimum area: {}".format(int(CONF['cv']['Min-area'])))
     DROPBOX_THREAD = threading.Thread(group=None, target=uploadImages)
+    DROPBOX_THREAD.daemon = True
     DROPBOX_THREAD.start()
     SEND_THREAD = threading.Thread(group=None, target=queue_sms, args=(CONTACTS,))
     SAVE_THREAD = threading.Thread(group=None, target=queue_save_photos)
     SAVE_THREAD.daemon = True
     SAVE_THREAD.start()
+    #SEND_THREAD.daemon = True
+    SEND_THREAD.start()
     time_last_sent = 0
     time_now = 0
     send_SMS = False
@@ -215,9 +223,8 @@ if __name__ == "__main__":
                 if send_SMS:
                     print("SENDING SMS NOW")
                     logger.info("SENDING SMS")
-                    qsms.put(True)
-                    time.sleep(0.1)
                     led.on()
+                    qsms.put(True)
                     time_last_sent = time.time()
                     send_SMS = False
 

@@ -25,7 +25,7 @@ import dropbox
 from dropbox.files import FileMetadata, FolderMetadata
 
 # OAuth2 access token.  TODO: login etc.
-TOKEN = 'QabTaMfxYJAAAAAAAAAANP0Cr1ZbpKld7fd1qOqLHOv-gr4ly2fP70e5RARitv5R'
+TOKEN = 'QabTaMfxYJAAAAAAAAAAPH40Yp8zDTi8Nm2EI8ORItKrhxE_zBTALSvLAX6Ddkn1'
 
 parser = argparse.ArgumentParser(description='Sync ~/Secret to Dropbox')
 parser.add_argument('folder', nargs='?', default='captures',
@@ -97,6 +97,7 @@ def main():
                 size = os.path.getsize(fullname)
                 if (isinstance(md, dropbox.files.FileMetadata) and
                     mtime_dt == md.client_modified and size == md.size):
+                    os.remove(fullname)
                     print(name, 'is already synced [stats match]')
                 else:
                     print(name, 'exists with different stats, downloading')
@@ -105,6 +106,7 @@ def main():
                         data = f.read()
                     if res == data:
                         print(name, 'is already synced [content match]')
+                        os.remove(fullname)
                     else:
                         print(name, 'has changed since last sync')
                         if yesno('Refresh %s' % name, False, args):
@@ -198,6 +200,7 @@ def upload(dbx, fullname, folder, subfolder, name, overwrite=False):
             print('*** API error', err)
             return None
     print('uploaded as', res.name.encode('utf8'))
+    os.remove(os.path.join("../captures",name))
     return res
 
 def yesno(message, default, args):
