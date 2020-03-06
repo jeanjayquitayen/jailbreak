@@ -225,7 +225,7 @@ if __name__ == "__main__":
                 if send_SMS:
                     print("SENDING SMS NOW")
                     logger.info("SENDING SMS")
-                    if(!alarm):
+                    if(not alarm):
                         alarm = True
                         led.on()
                     qsms.put(True)
