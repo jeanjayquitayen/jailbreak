@@ -25,7 +25,10 @@ import dropbox
 from dropbox.files import FileMetadata, FolderMetadata
 
 # OAuth2 access token.  TODO: login etc.
-TOKEN = 'QabTaMfxYJAAAAAAAAAAPH40Yp8zDTi8Nm2EI8ORItKrhxE_zBTALSvLAX6Ddkn1'
+token = open('token.txt','r')
+line  = token.read()
+TOKEN = line.strip()
+token.close()
 
 parser = argparse.ArgumentParser(description='Sync ~/Secret to Dropbox')
 parser.add_argument('folder', nargs='?', default='captures',

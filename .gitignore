@@ -2,3 +2,5 @@
 *.jpg
 #python hidden
 *.pyc
+#token
+token.txt
